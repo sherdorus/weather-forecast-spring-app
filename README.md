@@ -1,6 +1,4 @@
 
-
-````markdown
 # 🌦️ Weather Forecast App
 
 A simple and elegant Spring Boot weather forecast application that fetches real-time weather data for any city using OpenWeather and OpenStreetMap APIs.
