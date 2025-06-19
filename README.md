@@ -26,8 +26,8 @@ A simple and elegant Spring Boot weather forecast application that fetches real-
 
 ### Run the app
 ```bash
-git clone https://github.com/yourusername/weather-forecast-app.git
-cd weather-forecast-app
+git clone https://github.com/yourusername/weather-forecast-spring-app.git
+cd weather-forecast-spring-app
 ./mvnw spring-boot:run
 ````
 
@@ -38,11 +38,11 @@ Then open: [http://localhost:8080](http://localhost:8080)
 ```
 src/
 ├── main/
-│   ├── java/com/example/weather/
+│   ├── java/io/sherdor/weatherspringapp/
 │   │   ├── controller/
 │   │   ├── service/
 │   │   ├── dto/
-│   │   ├── util/
+│   │   ├── config/
 │   └── resources/
 │       ├── templates/
 │       ├── static/
@@ -52,7 +52,14 @@ src/
 
 ## 📸 Screenshots
 
-*(Coming soon)*
+### ☀️ Light Theme
+
+![Weather App Light](https://github.com/user-attachments/assets/3a4124bc-25e5-4d8d-92ee-1dffec2ede21)
+
+![Weather App Light](https://github.com/user-attachments/assets/61e14369-10f4-4973-8573-6929dc8ffd90)
+
+### 🌙 Dark Theme
+![Weather App Dark](https://github.com/user-attachments/assets/1b19b324-9a94-4d1a-84f4-4d3e5698e78c)
 
 ---
 
