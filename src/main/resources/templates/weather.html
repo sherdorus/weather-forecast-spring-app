@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{weather.title}">Weather | Forecast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/weather.css}">
+</head>
+<body class="d-flex align-items-center py-4">
+<div class="container">
+    <div class="weather-card">
+        <!-- Header -->
+        <div class="current-weather">
+            <div class="d-flex flex-column gap-3">
+                <div class="d-flex justify-content-start align-items-center">
+                    <a th:href="@{/}" aria-label="Weather App Home">
+                        <img th:src="@{/images/weather_app.svg}" alt="WeatherApp Logo" width="200" height="35"
+                             class="weather-logo"/>
+                    </a>
+                    <span class="visually-hidden" th:text="#{weather.header}">Weather Forecast</span>
+                </div>
+
+                <form method="get" class="mb-4" id="search-form">
+                    <div class="input-group">
+                        <input type="search"
+                               name="city"
+                               id="city-input"
+                               class="form-control search-input"
+                               th:placeholder="#{weather.search.placeholder}"
+                               th:value="${location}"
+                               aria-label="Search for a city">
+                        <button type="submit" class="btn btn-light" aria-label="Search">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Main Metrics -->
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h2 class="display-3 fw-bold mb-2"
+                            th:text="${#numbers.formatDecimal(weather.currentWeather.temperature, 1, 0)} + '°F'"></h2>
+                        <div class="h5" th:text="${weatherText}"></div>
+                    </div>
+                    <i class="bi"
+                       th:classappend="'bi-' + ${weatherIcon}"
+                       style="font-size: 4rem;"
+                       th:aria-label="${weatherText}"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details -->
+        <div class="p-4">
+            <!-- Errors -->
+            <div th:if="${error}" class="alert alert-danger mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
+                <span th:text="${error}"></span>
+            </div>
+
+            <!-- Metrics -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="metric-card">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-droplet fs-5" aria-hidden="false"></i>
+                            <div>
+                                <div class="text-muted small" th:text="#{weather.humidity}">Humidity</div>
+                                <div class="h4 mb-0" th:text="${weather.currentWeather.humidity} + '%'"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <div class="metric-card">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-cloud-rain fs-5" aria-hidden="true"></i>
+                            <div>
+                                <div class="text-muted small" th:text="#{weather.precipitation}">Precipitation</div>
+                                <div class="h4 mb-0"
+                                     th:text="${#numbers.formatDecimal(weather.currentWeather.precipitation, 1, 1)} + ' mm'"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <div class="metric-card">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-cloud fs-5" aria-hidden="true"></i>
+                            <div>
+                                <div class="text-muted small" th:text="#{weather.cloudCover}">Cloud Cover</div>
+                                <div class="h4 mb-0"
+                                     th:text="${#numbers.formatDecimal(weather.currentWeather.cloudCover, 1, 1)} + ' %'"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <div class="metric-card">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-wind fs-5" aria-hidden="true"></i>
+                            <div>
+                                <div class="text-muted small" th:text="#{weather.wind}">Wind</div>
+                                <div class="h4 mb-0"
+                                     th:text="${#numbers.formatDecimal(weather.currentWeather.windSpeed, 1, 1)} + ' km/h'"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hourly Forecast -->
+            <div th:if="${weather?.hourlyWeather?.weatherCodes != null}">
+                <h5 class="h6 text-muted mb-3" th:text="#{weather.hourlyForecast}">Hourly Forecast</h5>
+                <div class="d-flex flex-nowrap overflow-auto gap-2 pb-2">
+                    <div th:each="time, iter : ${weather.hourlyWeather.time}"
+                         th:if="${iter.index < 24}"
+                         class="hourly-item"
+                         th:style="'--index: ' + ${iter.index}">
+                        <div class="text-center">
+                            <div class="text-muted small mb-1"
+                                 th:text="${#strings.substring(time, 11, 16)}"></div>
+                            <i class="bi"
+                               th:classappend="'bi-' + ${@weatherCodeUtil.getWeatherInfo(weather.hourlyWeather.weatherCodes[iter.index]).get('icon')}"
+                               th:if="${iter.index < weather.hourlyWeather.weatherCodes.size()}"
+                               style="font-size: 1.25rem;"
+                               th:aria-label="${@weatherCodeUtil.getWeatherInfo(weather.hourlyWeather.weatherCodes[iter.index]).get('textKey')}"></i>
+                            <div class="h5 mt-1 mb-0"
+                                 th:text="${#numbers.formatDecimal(weather.hourlyWeather.temperatures[iter.index], 1, 0)} + '°'"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Toast for error notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="error-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong class="me-auto" th:text="#{weather.error.title}">Error</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="error-toast-body"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/weather.js}"></script>
+</body>
+</html>
