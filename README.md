@@ -26,7 +26,7 @@ A simple and elegant Spring Boot weather forecast application that fetches real-
 
 ### Run the app
 ```bash
-git clone https://github.com/yourusername/weather-forecast-spring-app.git
+git clone https://github.com/sherdorus/weather-forecast-spring-app.git
 cd weather-forecast-spring-app
 ./mvnw spring-boot:run
 ````
