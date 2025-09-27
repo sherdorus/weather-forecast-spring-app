@@ -26,14 +26,20 @@ public class WeatherController {
             List<GeocodingResponse> locations = weatherService.searchCity(city);
             if (locations.isEmpty()) {
                 model.addAttribute("error", "City '" + city + "' not found");
+                model.addAttribute("weather", createDefaultWeatherResponse());
+                model.addAttribute("location", city);
                 return "weather";
             }
 
             GeocodingResponse location = locations.getFirst();
-            WeatherResponse weather = weatherService.getWeather(
-                    location.getLatitude(),
-                    location.getLongitude()
-            );
+            WeatherResponse weather = weatherService.getWeather(location.getLatitude(), location.getLongitude());
+
+            if (weather == null || weather.getCurrentWeather() == null) {
+                model.addAttribute("error", "Unable to fetch weather data for " + city);
+                model.addAttribute("weather", createDefaultWeatherResponse());
+                model.addAttribute("location", location.getDisplayName());
+                return "weather";
+            }
 
             Map<String, String> weatherInfo = weatherCodeUtil.getWeatherInfo(
                     weather.getCurrentWeather().getWeatherCode()
@@ -43,20 +49,39 @@ public class WeatherController {
             model.addAttribute("location", location.getDisplayName());
 
             if (weather.getHourlyWeather() != null
-                    && weather.getHourlyWeather().getWeatherCodes() != null
-                    && !weather.getHourlyWeather().getWeatherCodes().isEmpty()) {
+                && weather.getHourlyWeather().getWeatherCodes() != null
+                && !weather.getHourlyWeather().getWeatherCodes().isEmpty()) {
 
                 Map<String, String> firstHourWeather = weatherCodeUtil.getWeatherInfo(
                         weather.getHourlyWeather().getWeatherCodes().getFirst()
                 );
                 model.addAttribute("firstHourIcon", firstHourWeather.get("icon"));
             }
+
             model.addAttribute("weatherIcon", weatherInfo.get("icon"));
             model.addAttribute("weatherText", weatherInfo.get("text"));
 
         } catch (Exception e) {
             model.addAttribute("error", "Error: " + e.getMessage());
+            model.addAttribute("weather", createDefaultWeatherResponse());
+            model.addAttribute("location", StringUtils.hasText(city) ? city : "New York");
         }
         return "weather";
+    }
+
+    private WeatherResponse createDefaultWeatherResponse() {
+        WeatherResponse weather = new WeatherResponse();
+
+        WeatherResponse.CurrentWeather currentWeather = new WeatherResponse.CurrentWeather();
+        currentWeather.setTemperature(0);
+        currentWeather.setHumidity(0);
+        currentWeather.setPrecipitation(0.0);
+        currentWeather.setCloudCover(00);
+        currentWeather.setWindSpeed(0.0);
+        currentWeather.setWeatherCode(0); // Код для ясной погоды
+
+        weather.setCurrentWeather(currentWeather);
+
+        return weather;
     }
 }
