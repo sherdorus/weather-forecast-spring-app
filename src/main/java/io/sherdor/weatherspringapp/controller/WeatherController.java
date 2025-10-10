@@ -92,6 +92,22 @@ public class WeatherController {
         System.out.println("Cached default weather for " + DEFAULT_CITY);
     }
 
+    private void populateModelWithWeather(Model model, WeatherResponse weather, GeocodingResponse location, String city) {
+        Map<String, String> weatherInfo = weatherCodeUtil.getWeatherInfo(weather.getCurrentWeather().getWeatherCode());
+        model.addAttribute("weather", weather);
+        model.addAttribute("location", location.getDisplayName());
+
+        if (weather.getHourlyWeather() != null
+            && weather.getHourlyWeather().getWeatherCodes() != null
+            && !weather.getHourlyWeather().getWeatherCodes().isEmpty()) {
+
+            Map<String, String> firstHourWeather = weatherCodeUtil.getWeatherInfo(weather.getHourlyWeather().getWeatherCodes().getFirst());
+            model.addAttribute("firstHourIcon", firstHourWeather.get("icon"));
+
+        }
+        model.addAttribute("weatherIcon", weatherInfo.get("icon"));
+        model.addAttribute("weatherText", weatherInfo.get("text"));    }
+
     private void handleException(Model model, Exception e, String city) {
         String errorMessage = "Error: " + e.getMessage();
         if (e.getMessage().contains("timeout") || e.getMessage().contains("connection")) {
