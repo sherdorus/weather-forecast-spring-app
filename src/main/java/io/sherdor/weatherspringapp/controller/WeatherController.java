@@ -31,50 +31,133 @@ public class WeatherController {
         try {
             city = StringUtils.hasText(city) ? city : DEFAULT_CITY;
 
-            List<GeocodingResponse> locations = weatherService.searchCity(city);
-            if (locations.isEmpty()) {
-                model.addAttribute("error", "City '" + city + "' not found");
-                model.addAttribute("weather", createDefaultWeatherResponse());
-                model.addAttribute("location", city);
-                return "weather";
+            if (DEFAULT_CITY.equals(city)) {
+                WeatherResponse cachedWeather = getCachedDefaultWeather();
+                if (cachedWeather != null) {
+                    System.out.println("Using cached weather for " + DEFAULT_CITY);
+                    populateModelWithWeather(model, cachedWeather, cachedDefaultLocation, city);
+                    return "weather";
+                }
             }
 
-            GeocodingResponse location = locations.getFirst();
-            WeatherResponse weather = weatherService.getWeather(location.getLatitude(), location.getLongitude());
+            List<GeocodingResponse> locations = searchCityWithRetry(city, 3);
+
+            if (locations == null || locations.isEmpty()) {
+                if (DEFAULT_CITY.equals(city)) {
+                    String[] alternativeCities = {"London", "Paris", "Tokyo", "Moscow", "Berlin"};
+                    for (String alternativeCity : alternativeCities) {
+                        locations = searchCityWithRetry(alternativeCity, 3);
+                        if (locations != null && !locations.isEmpty()) {
+                            city = alternativeCity;
+                            model.addAttribute("error", "Default city not available. Showing weather for " + alternativeCity + " instead.");
+                            break;
+                        }
+                    }
+                }
+
+                if (locations == null || locations.isEmpty()) {
+                    model.addAttribute("error", "Unable to find city '" + city + "'. Please try again or check your internet connection.");
+                    model.addAttribute("weather", createDefaultWeatherResponse());
+                    model.addAttribute("location", city);
+                    model.addAttribute("weatherIcon", "cloud-question");
+                    model.addAttribute("weatherText", "No data available");
+                    return "weather";
+                }
+            }
+
+            GeocodingResponse location = locations.get(0);
+            WeatherResponse weather = getWeatherWithRetry(location.getLatitude(), location.getLongitude(), 3);
 
             if (weather == null || weather.getCurrentWeather() == null) {
-                model.addAttribute("error", "Unable to fetch weather data for " + city);
+                model.addAttribute("error", "Unable to fetch weather data for " + city + ". Please try again.");
                 model.addAttribute("weather", createDefaultWeatherResponse());
                 model.addAttribute("location", location.getDisplayName());
+                model.addAttribute("weatherIcon", "cloud-question");
+                model.addAttribute("weatherText", "No data available");
                 return "weather";
             }
 
-            Map<String, String> weatherInfo = weatherCodeUtil.getWeatherInfo(
-                    weather.getCurrentWeather().getWeatherCode()
-            );
-
-            model.addAttribute("weather", weather);
-            model.addAttribute("location", location.getDisplayName());
-
-            if (weather.getHourlyWeather() != null
-                && weather.getHourlyWeather().getWeatherCodes() != null
-                && !weather.getHourlyWeather().getWeatherCodes().isEmpty()) {
-
-                Map<String, String> firstHourWeather = weatherCodeUtil.getWeatherInfo(
-                        weather.getHourlyWeather().getWeatherCodes().getFirst()
-                );
-                model.addAttribute("firstHourIcon", firstHourWeather.get("icon"));
+            if (DEFAULT_CITY.equals(city)) {
+                cacheDefaultWeather(location, weather);
             }
 
-            model.addAttribute("weatherIcon", weatherInfo.get("icon"));
-            model.addAttribute("weatherText", weatherInfo.get("text"));
+            populateModelWithWeather(model, weather, location, city);
 
         } catch (Exception e) {
-            model.addAttribute("error", "Error: " + e.getMessage());
-            model.addAttribute("weather", createDefaultWeatherResponse());
-            model.addAttribute("location", StringUtils.hasText(city) ? city : "New York");
+            System.err.println("Exception in WeatherController: " + e.getMessage());
+            e.printStackTrace();
+
+            handleException(model, e, city);
         }
         return "weather";
+    }
+
+    private List<GeocodingResponse> searchCityWithRetry(String city, int maxRetries) {
+        List<GeocodingResponse> locations = null;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                System.out.println("Searching for city: " + city + " (attempt " + attempt + "/" + maxRetries + ")");
+                locations = weatherService.searchCity(city);
+
+                if (locations != null && !locations.isEmpty()) {
+                    System.out.println("Successfully found " + locations.size() + " locations for " + city);
+                    return locations;
+
+                }
+                System.out.println("No locations found for " + city + " on attempt " + attempt);
+
+                if (attempt < maxRetries) {
+                    Thread.sleep(1000 * attempt);
+                }
+            } catch (Exception e) {
+                System.err.println("Error searching for city " + city + " on attempt " + attempt + ": " + e.getMessage());
+                if (attempt < maxRetries) {
+                    try {
+                        Thread.sleep(1000 * attempt);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+        }
+        return locations;
+    }
+
+    private WeatherResponse getWeatherWithRetry(double latitude, double longitude, int maxRetries) {
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                System.out.println("Getting weather for coordinates: " + latitude + ", " + longitude + " (attempt " + attempt + "/" + maxRetries + ")");
+                WeatherResponse weather = weatherService.getWeather(latitude, longitude);
+
+                if (weather != null && weather.getCurrentWeather() != null) {
+                    System.out.println("Successfully retrieved weather data");
+
+                    return weather;
+                }
+
+                System.out.println("Weather data is null on attempt " + attempt);
+
+                if (attempt < maxRetries) {
+                    Thread.sleep(1000 * attempt);
+                }
+
+            } catch (Exception e) {
+                System.err.println("Error getting weather on attempt " + attempt + ": " + e.getMessage());
+
+                if (attempt < maxRetries) {
+                    try {
+                        Thread.sleep(1000 * attempt);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private WeatherResponse getCachedDefaultWeather() {
@@ -92,7 +175,8 @@ public class WeatherController {
         System.out.println("Cached default weather for " + DEFAULT_CITY);
     }
 
-    private void populateModelWithWeather(Model model, WeatherResponse weather, GeocodingResponse location, String city) {
+    private void populateModelWithWeather(Model model, WeatherResponse weather, GeocodingResponse
+            location, String city) {
         Map<String, String> weatherInfo = weatherCodeUtil.getWeatherInfo(weather.getCurrentWeather().getWeatherCode());
         model.addAttribute("weather", weather);
         model.addAttribute("location", location.getDisplayName());
@@ -106,7 +190,8 @@ public class WeatherController {
 
         }
         model.addAttribute("weatherIcon", weatherInfo.get("icon"));
-        model.addAttribute("weatherText", weatherInfo.get("text"));    }
+        model.addAttribute("weatherText", weatherInfo.get("text"));
+    }
 
     private void handleException(Model model, Exception e, String city) {
         String errorMessage = "Error: " + e.getMessage();
