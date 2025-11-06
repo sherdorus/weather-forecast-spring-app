@@ -3,21 +3,41 @@
 
 A simple and elegant Spring Boot weather forecast application that fetches real-time weather data for any city using OpenWeather and OpenStreetMap APIs.
 
+
+## 🌍 Live Demo
+
+🚀 **Try it live:** [Weather Forecast App on Render](https://weather-forecast-spring-app.onrender.com)  
+*(It may take up to 30 seconds to wake up if the Render free instance is asleep.)*
+
+## 🧰 Deployment Details
+
+- **Platform:** Render
+- **Runtime:** Java 17
+- **Containerization:** Docker
+- **CI/CD:** GitHub Actions (automatic build & deploy on push to `master`)
+- **Build Command:** `./mvnw clean package -DskipTests`
+- **Start Command:** `java -jar target/weatherSpringApp-0.0.1-SNAPSHOT.jar`
+
 ## 🔧 Features
 
 - 🔍 City search with real-time geocoding (via Nominatim API)
 - 🌤️ Current weather with temperature, humidity, wind, and cloud cover
 - ⚠️ Error handling with Bootstrap Toast notifications
 - ⚡ Lightweight cache using Caffeine
+- 🐳 Dockerized for easy deployment
+- 🔁 Automated CI/CD via GitHub Actions
 
 ## 🛠 Tech Stack
 
-- Java 17
-- Spring Boot 3
-- Open-Meteo Weather API
-- OpenStreetMap Nominatim API
-- Caffeine Cache
-
+- **Java 17**
+- **Spring Boot 3**
+- **Open-Meteo Weather API**
+- **OpenStreetMap Nominatim API**
+- **Caffeine Cache**
+- **Docker**
+- **GitHub Actions**
+- **Render Cloud Platform**
+- 
 ## 🚀 Getting Started
 
 ### Requirements
