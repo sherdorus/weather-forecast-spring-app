@@ -65,7 +65,7 @@ public class WeatherController {
                 }
             }
 
-            GeocodingResponse location = locations.get(0);
+            GeocodingResponse location = locations.getFirst();
             WeatherResponse weather = getWeatherWithRetry(location.getLatitude(), location.getLongitude(), 3);
 
             if (weather == null || weather.getCurrentWeather() == null) {
@@ -108,13 +108,13 @@ public class WeatherController {
                 System.out.println("No locations found for " + city + " on attempt " + attempt);
 
                 if (attempt < maxRetries) {
-                    Thread.sleep(1000 * attempt);
+                    Thread.sleep(1000L * attempt);
                 }
             } catch (Exception e) {
                 System.err.println("Error searching for city " + city + " on attempt " + attempt + ": " + e.getMessage());
                 if (attempt < maxRetries) {
                     try {
-                        Thread.sleep(1000 * attempt);
+                        Thread.sleep(1000L * attempt);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         break;
@@ -140,7 +140,7 @@ public class WeatherController {
                 System.out.println("Weather data is null on attempt " + attempt);
 
                 if (attempt < maxRetries) {
-                    Thread.sleep(1000 * attempt);
+                    Thread.sleep(1000L * attempt);
                 }
 
             } catch (Exception e) {
@@ -148,7 +148,7 @@ public class WeatherController {
 
                 if (attempt < maxRetries) {
                     try {
-                        Thread.sleep(1000 * attempt);
+                        Thread.sleep(1000L * attempt);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         break;
@@ -161,7 +161,7 @@ public class WeatherController {
     }
 
     private WeatherResponse getCachedDefaultWeather() {
-        Long currentTime = System.currentTimeMillis();
+        long currentTime = System.currentTimeMillis();
         if (cachedDefaultWeather != null && cachedDefaultLocation != null && (currentTime - lastCacheUpdate) < CACHE_TIMEOUT) {
             return cachedDefaultWeather;
         }
